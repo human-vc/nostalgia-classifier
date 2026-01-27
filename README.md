@@ -2,7 +2,9 @@
 
 DistilBERT-based classifier to detect nostalgic framing in political advertisements.
 
-## Quick Start with Claude Code
+This model accompanies the paper: **"When Nostalgia Backfires: Context-Dependent Effects of Nostalgic Political Advertising in Electoral Flux"**
+
+## Quick Start
 
 ### 1. Setup
 ```bash
@@ -12,15 +14,10 @@ pip install -r requirements.txt
 
 ### 2. Train the Model
 ```bash
-python train.py --data_path full_450_ads_realistic.csv --epochs 5 --batch_size 16
+python train.py --data_path your_data.csv --epochs 5 --batch_size 16
 ```
 
-**Expected output:**
-- Accuracy: ~75-85%
-- F1 Score: ~0.70-0.80
-- Cohen's κ: ~0.50-0.65
-
-This is a realistic range for this task. If you see 95%+ accuracy, there's likely data leakage.
+Your CSV should have columns: `Transcript` (text) and `Nostalgia_Binary` (0 or 1).
 
 ### 3. Run Inference
 
@@ -38,7 +35,7 @@ python inference.py --model_dir models/nostalgia_classifier \
 
 ## What Makes an Ad "Nostalgic"?
 
-Based on the dictionary from "When Nostalgia Backfires":
+Based on the dictionary from the paper:
 
 ### Nostalgic (Label = 1)
 - **Restoration language:** "restore", "return", "bring back", "again"
@@ -55,8 +52,8 @@ Based on the dictionary from "When Nostalgia Backfires":
 
 - `train.py` - Main training script
 - `inference.py` - Classify new ads
-- `full_450_ads_realistic.csv` - Training data (450 ads, paper proportions)
 - `requirements.txt` - Dependencies
+- `models/nostalgia_classifier/` - Pre-trained model weights
 
 ## Model Architecture
 
@@ -67,15 +64,6 @@ Based on the dictionary from "When Nostalgia Backfires":
 
 ## Citation
 
-If using for research, cite the original paper:
-> "When Nostalgia Backfires: The Conditional Effects of Nostalgic Appeals in Political Advertising"
+If using this classifier, please cite:
 
-## Notes
-
-The training data uses realistic language patterns from 2024 campaign ads, preserving the paper's proportions:
-- Trump Campaign: 57.8% nostalgic
-- MAGA Inc: 77.1% nostalgic  
-- Harris Campaign: 9.8% nostalgic
-- FF PAC: 1.6% nostalgic
-
-Overall: Republican ads ~64% nostalgic, Democratic ads ~8% nostalgic.
+> Crainic, J. (2025). When Nostalgia Backfires: Context-Dependent Effects of Nostalgic Political Advertising in Electoral Flux.
