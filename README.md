@@ -61,9 +61,3 @@ Based on the dictionary from the paper:
 - Classification head: 2-class softmax
 - Max sequence length: 256 tokens
 - Training: AdamW with linear warmup
-
-## Citation
-
-If using this classifier, please cite:
-
-> Crainic, J. (2026). When Nostalgia Backfires: Context-Dependent Effects of Nostalgic Political Advertising in Electoral Flux.
