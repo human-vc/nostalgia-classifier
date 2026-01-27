@@ -27,12 +27,6 @@ python inference.py --model_dir models/nostalgia_classifier \
     --text "We will make America great again. Return to the prosperity of four years ago."
 ```
 
-**CSV file:**
-```bash
-python inference.py --model_dir models/nostalgia_classifier \
-    --csv_path new_ads.csv --output_path predictions.csv
-```
-
 ## What Makes an Ad "Nostalgic"?
 
 Based on the dictionary from the paper:
