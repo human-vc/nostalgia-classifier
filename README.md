@@ -66,4 +66,4 @@ Based on the dictionary from the paper:
 
 If using this classifier, please cite:
 
-> Crainic, J. (2025). When Nostalgia Backfires: Context-Dependent Effects of Nostalgic Political Advertising in Electoral Flux.
+> Crainic, J. (2026). When Nostalgia Backfires: Context-Dependent Effects of Nostalgic Political Advertising in Electoral Flux.
