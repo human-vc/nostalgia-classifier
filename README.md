@@ -55,3 +55,9 @@ Based on the dictionary from the paper:
 - Classification head: 2-class softmax
 - Max sequence length: 256 tokens
 - Training: AdamW with linear warmup
+
+## Model Results 
+
+<img width="2953" height="2955" alt="confusion_matrix_isef" src="https://github.com/user-attachments/assets/64c40dcf-6402-43bc-b782-e75d38da92d8" />
+
+
