@@ -1,8 +1,26 @@
+"""
+Inference script for nostalgia classifier.
+
+Classify single texts or batch-process CSV files.
+
+Usage:
+    # Single text
+    python inference.py --model_dir models/nostalgia_classifier \
+        --text "We will make America great again. Return to the prosperity of four years ago."
+
+    # Batch CSV
+    python inference.py --model_dir models/nostalgia_classifier \
+        --csv_path ads.csv --text_column Transcript
+"""
+
 import argparse
 import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import numpy as np
+
+
+MAX_LENGTH = 512
 
 
 def load_model(model_dir):
@@ -14,7 +32,7 @@ def load_model(model_dir):
     return model, tokenizer, device
 
 
-def predict_single(text, model, tokenizer, device, max_length=256):
+def predict_single(text, model, tokenizer, device, max_length=MAX_LENGTH):
     encoding = tokenizer(
         text,
         truncation=True,
@@ -42,7 +60,7 @@ def predict_single(text, model, tokenizer, device, max_length=256):
     }
 
 
-def predict_batch(texts, model, tokenizer, device, batch_size=32, max_length=256):
+def predict_batch(texts, model, tokenizer, device, batch_size=32, max_length=MAX_LENGTH):
     results = []
 
     for i in range(0, len(texts), batch_size):
@@ -66,13 +84,13 @@ def predict_batch(texts, model, tokenizer, device, batch_size=32, max_length=256
             pred_classes = torch.argmax(probs, dim=1).cpu().numpy()
             nostalgia_probs = probs[:, 1].cpu().numpy()
 
-        for j, (pred, prob) in enumerate(zip(pred_classes, nostalgia_probs)):
-            results.append({
-                'text': batch_texts[j][:100] + '...' if len(batch_texts[j]) > 100 else batch_texts[j],
-                'prediction': int(pred),
-                'label': 'Nostalgic' if pred == 1 else 'Non-Nostalgic',
-                'nostalgia_probability': float(prob)
-            })
+            for j, (pred, prob) in enumerate(zip(pred_classes, nostalgia_probs)):
+                results.append({
+                    'text': batch_texts[j][:100] + '...' if len(batch_texts[j]) > 100 else batch_texts[j],
+                    'prediction': int(pred),
+                    'label': 'Nostalgic' if pred == 1 else 'Non-Nostalgic',
+                    'nostalgia_probability': float(prob)
+                })
 
     return results
 
@@ -89,15 +107,15 @@ def main(args):
         print("PREDICTION")
         print(f"{'='*50}")
         print(f"Text: {args.text[:100]}{'...' if len(args.text) > 100 else ''}")
-        print(f"\nLabel: {result['label']}")
+        print(f"\nLabel:    {result['label']}")
         print(f"Confidence: {result['confidence']:.2%}")
         print(f"Nostalgia probability: {result['nostalgia_probability']:.2%}")
 
     elif args.csv_path:
         print(f"\nLoading CSV: {args.csv_path}")
         df = pd.read_csv(args.csv_path)
-
         text_col = args.text_column or 'Transcript'
+
         if text_col not in df.columns:
             raise ValueError(f"Column '{text_col}' not found. Available: {df.columns.tolist()}")
 
@@ -113,25 +131,25 @@ def main(args):
         print(f"\n{'='*50}")
         print("SUMMARY")
         print(f"{'='*50}")
-        print(f"Total ads: {len(df)}")
-        print(f"Nostalgic: {(df['Nostalgia_Prediction']==1).sum()} ({(df['Nostalgia_Prediction']==1).mean():.1%})")
-        print(f"Non-nostalgic: {(df['Nostalgia_Prediction']==0).sum()} ({(df['Nostalgia_Prediction']==0).mean():.1%})")
+        print(f"Total ads:      {len(df)}")
+        print(f"Nostalgic:      {(df['Nostalgia_Prediction']==1).sum()} ({(df['Nostalgia_Prediction']==1).mean():.1%})")
+        print(f"Non-nostalgic:  {(df['Nostalgia_Prediction']==0).sum()} ({(df['Nostalgia_Prediction']==0).mean():.1%})")
 
         output_path = args.output_path or args.csv_path.replace('.csv', '_predictions.csv')
         df.to_csv(output_path, index=False)
         print(f"\nSaved to: {output_path}")
-
     else:
         print("Please provide --text or --csv_path")
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model_dir', type=str, required=True)
-    parser.add_argument('--text', type=str)
-    parser.add_argument('--csv_path', type=str)
-    parser.add_argument('--text_column', type=str, default='Transcript')
-    parser.add_argument('--output_path', type=str)
-
+    parser = argparse.ArgumentParser(description='Classify political ads for nostalgic framing')
+    parser.add_argument('--model_dir', type=str, required=True,
+                        help='Path to trained model directory')
+    parser.add_argument('--text', type=str, help='Single text to classify')
+    parser.add_argument('--csv_path', type=str, help='CSV file to batch classify')
+    parser.add_argument('--text_column', type=str, default='Transcript',
+                        help='Column name containing text (default: Transcript)')
+    parser.add_argument('--output_path', type=str, help='Output CSV path')
     args = parser.parse_args()
     main(args)
