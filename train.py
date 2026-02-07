@@ -1,22 +1,3 @@
-"""
-Stage 2: Fine-tune DistilBERT on political advertisement corpus.
-
-Supports two-stage transfer learning (Howard & Ruder, 2018):
-  1. Pre-fine-tune on Miller Center speeches (pretrain.py)
-  2. Fine-tune on target ad corpus with 5-fold stratified CV (this script)
-
-The final production model is retrained on the full dataset after CV evaluation.
-
-Usage:
-    # From scratch (no pre-training)
-    python train.py --data_path ads.csv
-
-    # Two-stage (after running pretrain.py)
-    python train.py --data_path ads.csv --pretrained_dir models/pretrained
-
-CSV format: columns 'Transcript' (text) and 'Nostalgia_Binary' (0 or 1)
-"""
-
 import argparse
 import pandas as pd
 import numpy as np
