@@ -1,16 +1,3 @@
-"""
-Stage 1: Domain-adaptive pre-fine-tuning on Miller Center Presidential Speech Archive.
-
-Following Howard & Ruder (2018), this script fine-tunes DistilBERT on ~400 labeled
-political speech excerpts before the target advertising corpus, exposing the model
-to broader nostalgic political language patterns.
-
-Usage:
-    python pretrain.py --data_path miller_center_speeches.csv --output_dir models/pretrained
-
-CSV format: columns 'text' (speech excerpt) and 'label' (0 = non-nostalgic, 1 = nostalgic)
-"""
-
 import argparse
 import pandas as pd
 import numpy as np
