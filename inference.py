@@ -1,18 +1,3 @@
-"""
-Inference script for nostalgia classifier.
-
-Classify single texts or batch-process CSV files.
-
-Usage:
-    # Single text
-    python inference.py --model_dir models/nostalgia_classifier \
-        --text "We will make America great again. Return to the prosperity of four years ago."
-
-    # Batch CSV
-    python inference.py --model_dir models/nostalgia_classifier \
-        --csv_path ads.csv --text_column Transcript
-"""
-
 import argparse
 import pandas as pd
 import torch
