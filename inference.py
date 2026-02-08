@@ -1,140 +1,118 @@
+"""
+Inference script for the nostalgia classifier.
+Supports single-text predictions and batch CSV processing.
+"""
+
 import argparse
 import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
-import numpy as np
 
-
-MAX_LENGTH = 512
+MAXLEN = 512
+LABELS = {0: 'Non-Nostalgic', 1: 'Nostalgic'}
 
 
 def load_model(model_dir):
-    tokenizer = DistilBertTokenizer.from_pretrained(model_dir)
-    model = DistilBertForSequenceClassification.from_pretrained(model_dir)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
-    model.eval()
-    return model, tokenizer, device
+    tok = DistilBertTokenizer.from_pretrained(model_dir)
+    mdl = DistilBertForSequenceClassification.from_pretrained(model_dir)
+    dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    mdl.to(dev).eval()
+    return mdl, tok, dev
 
 
-def predict_single(text, model, tokenizer, device, max_length=MAX_LENGTH):
-    encoding = tokenizer(
-        text,
-        truncation=True,
-        padding='max_length',
-        max_length=max_length,
-        return_tensors='pt'
-    )
-
+def classify_one(text, model, tok, dev):
+    enc = tok(text, truncation=True, padding='max_length',
+              max_length=MAXLEN, return_tensors='pt')
     with torch.no_grad():
-        input_ids = encoding['input_ids'].to(device)
-        attention_mask = encoding['attention_mask'].to(device)
-
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        probs = torch.softmax(outputs.logits, dim=1)
-
-        pred_class = torch.argmax(probs, dim=1).item()
-        confidence = probs[0, pred_class].item()
-        nostalgia_prob = probs[0, 1].item()
-
+        ids = enc['input_ids'].to(dev)
+        mask = enc['attention_mask'].to(dev)
+        logits = model(input_ids=ids, attention_mask=mask).logits
+        probs = torch.softmax(logits, dim=1)
+        cls = torch.argmax(probs, dim=1).item()
     return {
-        'prediction': pred_class,
-        'label': 'Nostalgic' if pred_class == 1 else 'Non-Nostalgic',
-        'confidence': confidence,
-        'nostalgia_probability': nostalgia_prob
+        'prediction': cls,
+        'label': LABELS[cls],
+        'confidence': probs[0, cls].item(),
+        'nostalgia_probability': probs[0, 1].item(),
     }
 
 
-def predict_batch(texts, model, tokenizer, device, batch_size=32, max_length=MAX_LENGTH):
-    results = []
-
-    for i in range(0, len(texts), batch_size):
-        batch_texts = texts[i:i + batch_size]
-
-        encodings = tokenizer(
-            batch_texts,
-            truncation=True,
-            padding='max_length',
-            max_length=max_length,
-            return_tensors='pt'
-        )
-
+def classify_batch(texts, model, tok, dev, bs=32):
+    out = []
+    for start in range(0, len(texts), bs):
+        chunk = texts[start:start + bs]
+        enc = tok(chunk, truncation=True, padding='max_length',
+                  max_length=MAXLEN, return_tensors='pt')
         with torch.no_grad():
-            input_ids = encodings['input_ids'].to(device)
-            attention_mask = encodings['attention_mask'].to(device)
+            ids = enc['input_ids'].to(dev)
+            mask = enc['attention_mask'].to(dev)
+            logits = model(input_ids=ids, attention_mask=mask).logits
+            probs = torch.softmax(logits, dim=1)
+            classes = torch.argmax(probs, dim=1).cpu().numpy()
+            nost_probs = probs[:, 1].cpu().numpy()
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            probs = torch.softmax(outputs.logits, dim=1)
-
-            pred_classes = torch.argmax(probs, dim=1).cpu().numpy()
-            nostalgia_probs = probs[:, 1].cpu().numpy()
-
-            for j, (pred, prob) in enumerate(zip(pred_classes, nostalgia_probs)):
-                results.append({
-                    'text': batch_texts[j][:100] + '...' if len(batch_texts[j]) > 100 else batch_texts[j],
-                    'prediction': int(pred),
-                    'label': 'Nostalgic' if pred == 1 else 'Non-Nostalgic',
-                    'nostalgia_probability': float(prob)
-                })
-
-    return results
+        for j, (c, p) in enumerate(zip(classes, nost_probs)):
+            snippet = chunk[j][:100] + '...' if len(chunk[j]) > 100 else chunk[j]
+            out.append({
+                'text': snippet,
+                'prediction': int(c),
+                'label': LABELS[int(c)],
+                'nostalgia_probability': float(p),
+            })
+    return out
 
 
-def main(args):
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Classify political ads for nostalgic framing')
+    parser.add_argument('--model_dir', required=True, help='Trained model directory')
+    parser.add_argument('--text', help='Single text to classify')
+    parser.add_argument('--csv_path', help='CSV file for batch classification')
+    parser.add_argument('--text_column', default='Transcript',
+                        help='Column containing ad transcripts (default: Transcript)')
+    parser.add_argument('--output_path', help='Where to save predictions CSV')
+    args = parser.parse_args()
+
     print("Loading model...")
     model, tokenizer, device = load_model(args.model_dir)
     print(f"Model loaded. Device: {device}")
 
     if args.text:
-        result = predict_single(args.text, model, tokenizer, device)
-
+        res = classify_one(args.text, model, tokenizer, device)
         print(f"\n{'='*50}")
         print("PREDICTION")
         print(f"{'='*50}")
-        print(f"Text: {args.text[:100]}{'...' if len(args.text) > 100 else ''}")
-        print(f"\nLabel:    {result['label']}")
-        print(f"Confidence: {result['confidence']:.2%}")
-        print(f"Nostalgia probability: {result['nostalgia_probability']:.2%}")
+        preview = args.text[:100] + '...' if len(args.text) > 100 else args.text
+        print(f"Text: {preview}")
+        print(f"\nLabel:    {res['label']}")
+        print(f"Confidence: {res['confidence']:.2%}")
+        print(f"Nostalgia probability: {res['nostalgia_probability']:.2%}")
 
     elif args.csv_path:
         print(f"\nLoading CSV: {args.csv_path}")
         df = pd.read_csv(args.csv_path)
-        text_col = args.text_column or 'Transcript'
+        col = args.text_column
+        if col not in df.columns:
+            raise ValueError(f"Column '{col}' not found. Available: {df.columns.tolist()}")
 
-        if text_col not in df.columns:
-            raise ValueError(f"Column '{text_col}' not found. Available: {df.columns.tolist()}")
-
-        texts = df[text_col].tolist()
+        texts = df[col].tolist()
         print(f"Processing {len(texts)} texts...")
-
-        results = predict_batch(texts, model, tokenizer, device)
+        results = classify_batch(texts, model, tokenizer, device)
 
         df['Nostalgia_Prediction'] = [r['prediction'] for r in results]
         df['Nostalgia_Label'] = [r['label'] for r in results]
         df['Nostalgia_Probability'] = [r['nostalgia_probability'] for r in results]
 
+        n_nost = (df['Nostalgia_Prediction'] == 1).sum()
+        n_non = (df['Nostalgia_Prediction'] == 0).sum()
         print(f"\n{'='*50}")
         print("SUMMARY")
         print(f"{'='*50}")
         print(f"Total ads:      {len(df)}")
-        print(f"Nostalgic:      {(df['Nostalgia_Prediction']==1).sum()} ({(df['Nostalgia_Prediction']==1).mean():.1%})")
-        print(f"Non-nostalgic:  {(df['Nostalgia_Prediction']==0).sum()} ({(df['Nostalgia_Prediction']==0).mean():.1%})")
+        print(f"Nostalgic:      {n_nost} ({n_nost/len(df):.1%})")
+        print(f"Non-nostalgic:  {n_non} ({n_non/len(df):.1%})")
 
-        output_path = args.output_path or args.csv_path.replace('.csv', '_predictions.csv')
-        df.to_csv(output_path, index=False)
-        print(f"\nSaved to: {output_path}")
+        out_path = args.output_path or args.csv_path.replace('.csv', '_predictions.csv')
+        df.to_csv(out_path, index=False)
+        print(f"\nSaved to: {out_path}")
     else:
         print("Please provide --text or --csv_path")
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Classify political ads for nostalgic framing')
-    parser.add_argument('--model_dir', type=str, required=True,
-                        help='Path to trained model directory')
-    parser.add_argument('--text', type=str, help='Single text to classify')
-    parser.add_argument('--csv_path', type=str, help='CSV file to batch classify')
-    parser.add_argument('--text_column', type=str, default='Transcript',
-                        help='Column name containing text (default: Transcript)')
-    parser.add_argument('--output_path', type=str, help='Output CSV path')
-    args = parser.parse_args()
-    main(args)
