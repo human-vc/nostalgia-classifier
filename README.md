@@ -4,9 +4,7 @@ DistilBERT-based classifier to detect nostalgic framing in political advertiseme
 
 This model accompanies the paper: **"Nostalgic Messaging-Driven Turnout Analysis: Transformer-Based Detection and Temporal Causal Modeling of Political Ad Effects in Battleground States"**
 
-## Two-Stage Training Pipeline
-
-Following Howard & Ruder (2018), the classifier uses sequential fine-tuning:
+## Two-Stage Training Steps
 
 1. **Stage 1** (`pretrain.py`): Domain-adaptive pre-fine-tuning on ~400 labeled political speech excerpts from the Miller Center Presidential Speech Archive (2016–2024)
 2. **Stage 2** (`train.py`): Fine-tuning on the target advertising corpus with 5-fold stratified cross-validation, then retraining the final production model on the full dataset
@@ -83,15 +81,9 @@ Based on the dictionary from the paper:
 
 ## Model Architecture
 
-- Base: `distilbert-base-uncased` (Sanh et al., 2019)
+- Base: `distilbert-base-uncased`
 - Classification head: 2-class softmax
 - Max sequence length: 512 tokens
-- Optimizer: AdamW (Loshchilov & Hutter, 2019) with linear warmup
-- Evaluation: 5-fold stratified cross-validation (mean F1 = 0.91, SD = 0.02)
+- Optimizer: AdamW with linear warmup
+- Evaluation: 5-fold stratified cross-validation
 - Production model: Retrained on full dataset after CV evaluation
-
-## References
-
-- Howard, J., & Ruder, S. (2018). Universal language model fine-tuning for text classification. *ACL*.
-- Loshchilov, I., & Hutter, F. (2019). Decoupled weight decay regularization. *ICLR*.
-- Sanh, V., Debut, L., Chaumond, J., & Wolf, T. (2019). DistilBERT, a distilled version of BERT. *arXiv:1910.01108*.
