@@ -21,11 +21,9 @@ models/nostalgia_classifier/
 *.onnx
 *.safetensors
 
-# Data (raw data is gitignored, processed is optional)
-data/raw/
-data/processed/*.csv
-!data/nostalgia_dictionary.json
-!data/README.md
+# Data (keep structure, ignore large files)
+*.csv
+!requirements.txt
 
 # IDE
 .vscode/
