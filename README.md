@@ -56,7 +56,7 @@ python inference.py --model_dir models/nostalgia_classifier \
 | `pretrain.py` | Stage 1: Miller Center domain-adaptive pre-fine-tuning |
 | `train.py` | Stage 2: 5-fold CV + full-dataset retraining on ad corpus |
 | `inference.py` | Classify new ads (single or batch) |
-| `models/nostalgia_classifier/` | Pre-trained model weights (F1 = 0.91, AUC = 0.92) |
+| `models/nostalgia_classifier/` | Pre-trained model weights |
 
 ## Model Architecture
 
@@ -64,4 +64,4 @@ python inference.py --model_dir models/nostalgia_classifier \
 - **Classification head**: 2-class softmax
 - **Max sequence length**: 512 tokens
 - **Optimizer**: AdamW (lr = 2e-5) with linear warmup
-- **Evaluation**: 5-fold stratified cross-validation (mean F1 = 0.91, SD = 0.02)
+- **Evaluation**: 5-fold stratified cross-validation
